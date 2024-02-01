@@ -13,22 +13,31 @@ function createKeyframeRules(inputObject: Keyframe): string {
     }, "");
 }
 
-function attachAnimationToElementIfPresent(
+export function attachAnimationToElementIfPresent(
   elementId: string,
-  animationName: string
+  animationName: string,
+  animationDurationInMs: number = 0,
+  animationPlayState: string = "paused",
+  animationDelay: string = "0ms"
 ) {
   const element = document.getElementById(elementId.slice(1));
   if (!element) {
+    console.log("no element!");
     return;
   }
   element.style.animationName = elementId.slice(1);
   element.style.animationName = animationName;
-  element.style.animationDuration = "10s";
-  element.style.animationPlayState = "paused";
+  element.style.animationDuration = `${animationDurationInMs}ms`;
+  element.style.animationPlayState = animationPlayState;
+  element.style.animationDelay = animationDelay;
 }
 
 // Function to create keyframes dynamically
-export function createKeyframes(elementId: string, frames: Keyframe[]) {
+export function createKeyframes(
+  elementId: string,
+  frames: Keyframe[],
+  animationDurationInMs?: number
+) {
   const animationName = elementId.slice(1);
   // Create a new style element
   const style = document.createElement("style");
@@ -44,7 +53,11 @@ export function createKeyframes(elementId: string, frames: Keyframe[]) {
   }
   keyframeRules += "}";
   style.sheet?.insertRule(keyframeRules, 0);
-  attachAnimationToElementIfPresent(elementId, animationName);
+  attachAnimationToElementIfPresent(
+    elementId,
+    animationName,
+    animationDurationInMs
+  );
 }
 
 interface Keyframe {

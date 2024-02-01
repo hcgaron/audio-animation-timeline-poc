@@ -7,6 +7,7 @@ export const timeline: TimelineDefinition = [
     animations: [
       {
         domId: "#a1",
+        durationInMs: 10000,
         animations: [
           {
             opacity: 0,
@@ -69,6 +70,37 @@ export const timeline: TimelineDefinition = [
             offset: 0.7,
             transform: "translate(0%, 0%)",
             scale: 1,
+          },
+        ],
+      },
+      {
+        domId: "#delayedElementOne",
+        durationInMs: 5000,
+        animations: [
+          {
+            offset: 0,
+            backgroundColor: "red",
+            transform: "translate(0px, 0px)",
+          },
+          {
+            offset: 0.1,
+            backgroundColor: "darkslateblue",
+          },
+          {
+            offset: 0.2,
+            backgroundColor: "green",
+          },
+          {
+            offset: 0.3,
+            backgroundColor: "red",
+          },
+          {
+            offset: 0.4,
+            transform: "translate(200px, 300px)",
+          },
+          {
+            offset: 0.5,
+            transform: "translate(0px, 0px)",
           },
         ],
       },

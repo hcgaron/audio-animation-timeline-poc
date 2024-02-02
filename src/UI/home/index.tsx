@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useTimeline } from "../../TimelineEngine/hooks/useTimeline";
-import { DelayedAnimatedElementExample } from "./delayedAnimatedElementExample";
+import { DelayedAnimatedElementExample } from "./DelayedAnimatedElementExample";
 
 export function Home() {
   const { play, pause, isPlaying, registerTimelineCallback } = useTimeline();
@@ -62,7 +62,9 @@ export function Home() {
 
   return (
     <div style={{ width: "90vw", margin: "0 auto" }}>
-      <div className="App">App Prototype</div>
+      <div style={{ fontSize: "24px" }} className="App">
+        App Prototype
+      </div>
       <div
         style={{
           display: "flex",

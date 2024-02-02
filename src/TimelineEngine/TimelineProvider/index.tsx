@@ -169,7 +169,7 @@ export const TimelineProvider = ({
     for (const animation of animations) {
       const animationEndTime = animation.startTimeInMs + animation.durationInMs;
       if (
-        animation.startTimeInMs < currentTimeInMilliseconds &&
+        animation.startTimeInMs <= currentTimeInMilliseconds &&
         animationEndTime > currentTimeInMilliseconds
       ) {
         const element = document.getElementById(animation.domId.slice(1));

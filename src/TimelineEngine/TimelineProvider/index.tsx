@@ -1,11 +1,6 @@
-import { createContext, useCallback, useEffect, useRef, useState } from "react";
-import { attachAnimationToElementIfPresent, createKeyframes } from "../Utils";
-import {
-  IAnimation,
-  ITimelineCallback,
-  ITimelineContext,
-  TimelineDefinition,
-} from "./types";
+import { createContext, useCallback, useEffect, useRef, useState } from 'react';
+import { attachAnimationToElementIfPresent, createKeyframes } from '../Utils';
+import { IAnimation, ITimelineCallback, ITimelineContext, TimelineDefinition } from './types';
 
 export const TimelineContext = createContext<ITimelineContext | null>(null);
 
@@ -45,9 +40,7 @@ export const TimelineProvider = ({
       return;
     }
     // Initialize our Audio element
-    audioRef.current = new Audio(
-      timelineDefinition[currentTrackNumber].audioSrc
-    );
+    audioRef.current = new Audio(timelineDefinition[currentTrackNumber].audioSrc);
   }, [currentTrackNumber, timelineDefinition]);
 
   useEffect(() => {
@@ -55,9 +48,7 @@ export const TimelineProvider = ({
       return;
     }
     // We could optimize this process by removing executed callbacks from the registry
-    function checkWindowForScheduledCallbacks(
-      lookahead: number = schedulerLookahead
-    ) {
+    function checkWindowForScheduledCallbacks(lookahead: number = schedulerLookahead) {
       if (!audioRef.current) {
         return;
       }
@@ -86,9 +77,7 @@ export const TimelineProvider = ({
         }
       }
     }
-    function checkWindowForScheduledAnimations(
-      lookahead: number = schedulerLookahead
-    ) {
+    function checkWindowForScheduledAnimations(lookahead: number = schedulerLookahead) {
       if (!audioRef.current) {
         return;
       }
@@ -108,14 +97,12 @@ export const TimelineProvider = ({
             const element = document.getElementById(animation.domId.slice(1));
             if (!element) {
               console.warn(
-                `No element found with id: ${animation.domId.slice(
-                  1
-                )} --> skipping animation`
+                `No element found with id: ${animation.domId.slice(1)} --> skipping animation`,
               );
               return;
             }
 
-            element.style.animationPlayState = "running";
+            element.style.animationPlayState = 'running';
           }, timeUntilAnimation);
         }
       }
@@ -132,11 +119,7 @@ export const TimelineProvider = ({
     // Create keyframes for each animation
     for (const segment of timelineDefinition) {
       for (const animation of segment.animations) {
-        createKeyframes(
-          animation.domId,
-          animation.animations,
-          animation.durationInMs
-        );
+        createKeyframes(animation.domId, animation.animations, animation.durationInMs);
       }
     }
   }, [timelineDefinition]);
@@ -163,8 +146,7 @@ export const TimelineProvider = ({
 
   function onAudioPlay() {
     const animations = timelineDefinition[currentTrackNumber].animations;
-    const currentTimeInMilliseconds =
-      (audioRef.current?.currentTime || 0) * 1000;
+    const currentTimeInMilliseconds = (audioRef.current?.currentTime || 0) * 1000;
     // Restart any animations we paused
     for (const animation of animations) {
       const animationEndTime = animation.startTimeInMs + animation.durationInMs;
@@ -174,7 +156,7 @@ export const TimelineProvider = ({
       ) {
         const element = document.getElementById(animation.domId.slice(1));
         if (element) {
-          element.style.animationPlayState = "running";
+          element.style.animationPlayState = 'running';
         }
       }
       // TODO: do we need to schedule callbacks here? Just in case one is a millisecond after the play event?
@@ -185,7 +167,7 @@ export const TimelineProvider = ({
     for (const animation of animations) {
       const element = document.getElementById(animation.domId.slice(1));
       if (element) {
-        element.style.animationPlayState = "paused";
+        element.style.animationPlayState = 'paused';
       }
     }
     // TODO: We need to clear all scheduled callbacks from executing if they are scheduled to execute after the pause
@@ -201,7 +183,7 @@ export const TimelineProvider = ({
   }
 
   function registerAnimation(animation: IAnimation) {
-    console.log("registerAnimation", animation);
+    console.log('registerAnimation', animation);
   }
 
   const registerTimelineCallback = useCallback(
@@ -221,13 +203,13 @@ export const TimelineProvider = ({
       }
       callbackRegistry.current.get(audioSrc)?.push(newCallback);
     },
-    [callbackRegistry]
+    [callbackRegistry],
   );
 
   function registerAnimatedElement(domId: string) {
-    const animationDuration = timelineDefinition[
-      currentTrackNumber
-    ].animations.find((animation) => animation.domId === domId)?.durationInMs;
+    const animationDuration = timelineDefinition[currentTrackNumber].animations.find(
+      (animation) => animation.domId === domId,
+    )?.durationInMs;
     attachAnimationToElementIfPresent(domId, domId.slice(1), animationDuration);
   }
 

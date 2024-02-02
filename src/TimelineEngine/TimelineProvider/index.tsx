@@ -1,34 +1,11 @@
 import { createContext, useCallback, useEffect, useRef, useState } from "react";
 import { attachAnimationToElementIfPresent, createKeyframes } from "../Utils";
-
-interface IAnimation {
-  domId: string;
-  // If not provided, it will default to the entire length of the audio file
-  durationInMs?: number;
-  animations: Keyframe[];
-}
-
-interface ITimelineCallback {
-  timestamp: number; // In milliseconds
-  callback: () => void;
-}
-
-interface TimelineSegment {
-  audioSrc: string;
-  animations: IAnimation[];
-}
-export type TimelineDefinition = TimelineSegment[];
-
-interface ITimelineContext {
-  registerAnimation: (animation: IAnimation) => void;
-  registerTimelineCallback: (callback: () => void, timestamp: number) => void;
-  // When an element that has a registered animation in the timeline is mounted, it will call this function
-  // This is useful for when you want to animate an element that is not mounted when the timeline is created
-  registerAnimatedElement: (domId: string) => void;
-  isPlaying: boolean;
-  play: () => void;
-  pause: () => void;
-}
+import {
+  IAnimation,
+  ITimelineCallback,
+  ITimelineContext,
+  TimelineDefinition,
+} from "./types";
 
 export const TimelineContext = createContext<ITimelineContext | null>(null);
 
@@ -70,29 +47,6 @@ export const TimelineProvider = ({
         timelineDefinition[currentTrackNumber].audioSrc
       );
     }
-
-    function setAnimationDurationBasedOnAudioClipLength(durationInMs: number) {
-      const animations = timelineDefinition[currentTrackNumber].animations;
-      for (const domId of animations
-        .filter((animation) => !animation.durationInMs)
-        .map((animation) => animation.domId)) {
-        const element = document.getElementById(domId.slice(1));
-        if (element) {
-          element.style.animationDuration = `${durationInMs}ms`;
-          element.style.animationPlayState = "paused";
-        }
-      }
-    }
-
-    audioRef.current.onloadedmetadata = () => {
-      const audioClipLengthInMilliseconds =
-        (audioRef.current?.duration || 0) * 1000;
-      // set our animation durations for our css keyframe elements
-      // TODO: we need to do this every time we change the audio file
-      setAnimationDurationBasedOnAudioClipLength(audioClipLengthInMilliseconds);
-    };
-
-    // audioRef.current?.addEventListener("loadedmetadata", );
   }, [currentTrackNumber, timelineDefinition]);
 
   useEffect(() => {
@@ -100,9 +54,9 @@ export const TimelineProvider = ({
       return;
     }
     // We could optimize this process by removing executed callbacks from the registry
-    const checkWindowForScheduledCallbacks = (
+    function checkWindowForScheduledCallbacks(
       lookahead: number = schedulerLookahead
-    ) => {
+    ) {
       if (!audioRef.current) {
         return;
       }
@@ -130,14 +84,71 @@ export const TimelineProvider = ({
           setTimeout(callback.callback, timeUntilCallback);
         }
       }
-    };
+    }
+    function checkWindowForScheduledAnimations(
+      lookahead: number = schedulerLookahead
+    ) {
+      if (!audioRef.current) {
+        return;
+      }
+      if (audioRef.current.paused) {
+        return;
+      }
+      const currentTimeInMilliseconds = audioRef.current?.currentTime * 1000;
+      const animations = timelineDefinition[currentTrackNumber].animations;
+      for (const animation of animations) {
+        const scheduledTime = animation.startTimeInMs;
+        if (
+          scheduledTime >= currentTimeInMilliseconds &&
+          scheduledTime <= currentTimeInMilliseconds + lookahead
+        ) {
+          const timeUntilAnimation = scheduledTime - currentTimeInMilliseconds;
+          setTimeout(() => {
+            const element = document.getElementById(animation.domId.slice(1));
+            if (!element) {
+              console.warn(
+                `No element found with id: ${animation.domId.slice(
+                  1
+                )} --> skipping animation`
+              );
+              return;
+            }
+
+            element.style.animationPlayState = "running";
+          }, timeUntilAnimation);
+        }
+      }
+    }
     // start our scheduler
-    const scheduler = setInterval(
-      checkWindowForScheduledCallbacks,
-      schedulerLookahead
-    );
+    const scheduler = setInterval(() => {
+      checkWindowForScheduledCallbacks();
+      checkWindowForScheduledAnimations();
+    }, schedulerLookahead);
     return () => clearInterval(scheduler);
   }, [schedulerLookahead, currentTrackNumber, timelineDefinition, isPlaying]);
+
+  useEffect(() => {
+    // Create keyframes for each animation
+    for (const segment of timelineDefinition) {
+      for (const animation of segment.animations) {
+        createKeyframes(
+          animation.domId,
+          animation.animations,
+          animation.durationInMs
+        );
+      }
+    }
+  }, [timelineDefinition]);
+
+  useEffect(() => {
+    if (isPlaying && audioRef.current?.paused) {
+      audioRef.current?.play();
+      return;
+    }
+    if (!audioRef.current?.paused) {
+      audioRef.current?.pause();
+    }
+  }, [isPlaying]);
 
   if (audioRef.current) {
     audioRef.current.onended = playNextTrack;
@@ -147,13 +158,22 @@ export const TimelineProvider = ({
 
   function onAudioPlay() {
     const animations = timelineDefinition[currentTrackNumber].animations;
+    const currentTimeInMilliseconds =
+      (audioRef.current?.currentTime || 0) * 1000;
+    // Restart any animations we paused
     for (const animation of animations) {
-      const element = document.getElementById(animation.domId.slice(1));
-      if (element) {
-        element.style.animationPlayState = "running";
+      const animationEndTime = animation.startTimeInMs + animation.durationInMs;
+      if (
+        animation.startTimeInMs < currentTimeInMilliseconds &&
+        animationEndTime > currentTimeInMilliseconds
+      ) {
+        const element = document.getElementById(animation.domId.slice(1));
+        if (element) {
+          element.style.animationPlayState = "running";
+        }
       }
+      // TODO: do we need to schedule callbacks here? Just in case one is a millisecond after the play event?
     }
-    // TODO: do we need to schedule callbacks here? Just in case one is a millisecond after the play event?
   }
   function onAudioPause() {
     const animations = timelineDefinition[currentTrackNumber].animations;
@@ -179,9 +199,8 @@ export const TimelineProvider = ({
     console.log("registerAnimation", animation);
   }
 
-  // TODO: registration should include an audioSrc and we don't need to check for the currentTrackNumber
   const registerTimelineCallback = useCallback(
-    (callback: () => void, timestamp: number) => {
+    (callback: () => void, timestamp: number, audioSrc: string) => {
       if (!callbackRegistry.current) {
         return;
       }
@@ -192,26 +211,19 @@ export const TimelineProvider = ({
         isScheduled: false,
         hasCompleted: false,
       };
-      if (!callbackMap.get(timelineDefinition[currentTrackNumber].audioSrc)) {
-        callbackMap.set(timelineDefinition[currentTrackNumber].audioSrc, []);
+      if (!callbackMap.get(audioSrc)) {
+        callbackMap.set(audioSrc, []);
       }
-      callbackRegistry.current
-        .get(timelineDefinition[currentTrackNumber].audioSrc)
-        ?.push(newCallback);
+      callbackRegistry.current.get(audioSrc)?.push(newCallback);
     },
-    [callbackRegistry, currentTrackNumber, timelineDefinition]
+    [callbackRegistry]
   );
 
   function registerAnimatedElement(domId: string) {
-    // const elapsedTimeInMs = (audioRef.current?.currentTime || 0) * 1000;
-    // const animationDelay = `${elapsedTimeInMs}ms`;
-    attachAnimationToElementIfPresent(
-      domId,
-      domId.slice(1),
-      undefined,
-      "playing"
-      // animationDelay
-    );
+    const animationDuration = timelineDefinition[
+      currentTrackNumber
+    ].animations.find((animation) => animation.domId === domId)?.durationInMs;
+    attachAnimationToElementIfPresent(domId, domId.slice(1), animationDuration);
   }
 
   function play() {
@@ -221,29 +233,6 @@ export const TimelineProvider = ({
   function pause() {
     setIsPlaying(false);
   }
-
-  useEffect(() => {
-    // Create keyframes for each animation
-    for (const segment of timelineDefinition) {
-      for (const animation of segment.animations) {
-        createKeyframes(
-          animation.domId,
-          animation.animations,
-          animation.durationInMs
-        );
-      }
-    }
-  }, [timelineDefinition]);
-
-  useEffect(() => {
-    if (isPlaying && audioRef.current?.paused) {
-      audioRef.current?.play();
-      return;
-    }
-    if (!audioRef.current?.paused) {
-      audioRef.current?.pause();
-    }
-  }, [isPlaying]);
 
   return (
     <TimelineContext.Provider

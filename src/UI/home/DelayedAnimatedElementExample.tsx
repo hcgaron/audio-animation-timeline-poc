@@ -14,7 +14,7 @@ export function DelayedAnimatedElementExample() {
       style={{
         height: "200px",
         width: "200px",
-        backgroundColor: "darkslateblue",
+        backgroundColor: "magenta",
       }}
     />
   );

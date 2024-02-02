@@ -1,4 +1,4 @@
-import { TimelineDefinition } from "./TimelineEngine/TimelineProvider";
+import { TimelineDefinition } from "./TimelineEngine/TimelineProvider/types";
 
 export const timeline: TimelineDefinition = [
   {
@@ -7,7 +7,8 @@ export const timeline: TimelineDefinition = [
     animations: [
       {
         domId: "#a1",
-        durationInMs: 10000,
+        durationInMs: 20000,
+        startTimeInMs: 2000,
         animations: [
           {
             opacity: 0,
@@ -76,11 +77,12 @@ export const timeline: TimelineDefinition = [
       {
         domId: "#delayedElementOne",
         durationInMs: 5000,
+        startTimeInMs: 5000,
         animations: [
           {
             offset: 0,
             backgroundColor: "red",
-            transform: "translate(0px, 0px)",
+            transform: "translate(0px, 0px);",
           },
           {
             offset: 0.1,

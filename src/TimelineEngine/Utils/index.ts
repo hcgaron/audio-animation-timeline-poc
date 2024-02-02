@@ -8,7 +8,7 @@ function createKeyframeRules(inputObject: Keyframe): string {
     )
     .reduce((result, property) => {
       const value = inputObject[property];
-      const keyframeRule = `${property}: ${value};`;
+      const keyframeRule = `${camelToKebab(property)}: ${value};`;
       return result + keyframeRule;
     }, "");
 }
@@ -20,9 +20,16 @@ export function attachAnimationToElementIfPresent(
   animationPlayState: string = "paused",
   animationDelay: string = "0ms"
 ) {
+  if (!animationDurationInMs) {
+    console.warn(
+      `No animation duration found for element: ${elementId}. This animation will attempt to be registered but will have 0 duration; it will likely not play properly!`
+    );
+  }
   const element = document.getElementById(elementId.slice(1));
   if (!element) {
-    console.log("no element!");
+    console.warn(
+      `No element with id ${elementId} found to attach animation ${animationName}!`
+    );
     return;
   }
   element.style.animationName = elementId.slice(1);
@@ -65,4 +72,8 @@ interface Keyframe {
   easing?: string;
   offset?: number | null;
   [property: string]: string | number | null | undefined;
+}
+
+export function camelToKebab(camelCase: string): string {
+  return camelCase.replace(/([a-z])([A-Z])/g, "$1-$2").toLowerCase();
 }

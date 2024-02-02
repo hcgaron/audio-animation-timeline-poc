@@ -94,15 +94,20 @@ export const timeline: TimelineDefinition = [
           },
           {
             offset: 0.3,
-            backgroundColor: "red",
+            backgroundColor: "sienna",
           },
           {
             offset: 0.4,
-            transform: "translate(200px, 300px)",
+            transform: "translate(200px, 300px);",
           },
           {
-            offset: 0.5,
-            transform: "translate(0px, 0px)",
+            offset: 0.8,
+            backgroundColor: "violet",
+          },
+          {
+            offset: 1,
+            backgroundColor: "magenta",
+            transform: "translate(0px, 0px);",
           },
         ],
       },

@@ -41,12 +41,13 @@ export const TimelineProvider = ({
   }, [timelineDefinition]);
 
   useEffect(() => {
-    // Initialize our Audio element
-    if (!audioRef.current) {
-      audioRef.current = new Audio(
-        timelineDefinition[currentTrackNumber].audioSrc
-      );
+    if (audioRef.current) {
+      return;
     }
+    // Initialize our Audio element
+    audioRef.current = new Audio(
+      timelineDefinition[currentTrackNumber].audioSrc
+    );
   }, [currentTrackNumber, timelineDefinition]);
 
   useEffect(() => {
@@ -150,6 +151,10 @@ export const TimelineProvider = ({
     }
   }, [isPlaying]);
 
+  // TODO: Is it ok to do this assignment on every render?
+  // I set it up like this so the callbacks don't get stale, and I believe garbage
+  // collector will clean up the old ones. This is better than addEventListener since
+  // we want to discard old callbacks to avoid stale closures
   if (audioRef.current) {
     audioRef.current.onended = playNextTrack;
     audioRef.current.onplay = onAudioPlay;

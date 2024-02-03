@@ -6,6 +6,15 @@ export interface IAnimation {
   startTimeInMs: number;
 }
 
+export interface MoveToAnimation {
+  source: string;
+  target: string;
+  startTimeInMs: number;
+  durationInMs: number;
+}
+
+export type TimelineEvent = IAnimation | MoveToAnimation;
+
 export interface ITimelineCallback {
   timestamp: number; // In milliseconds
   callback: () => void;

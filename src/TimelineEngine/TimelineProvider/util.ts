@@ -52,7 +52,6 @@ export function moveElement(
   const destination = computeCoordsFromPlacement(sourceSelector, targetSelector, {
     placement: anchorTo,
   });
-  console.log(destination);
 
   console.log(destination);
   if (!destination) {
@@ -118,22 +117,14 @@ export function computeCoordsFromPlacement(
   }: { placement: Placement; sideOffset?: number; alignOffset?: number },
 ): Coords | undefined {
   const sourceEl = document.querySelector(sourceSelector);
-  const targetEl = document.querySelector(targetSelector) as HTMLElement;
+  const targetEl = document.querySelector(targetSelector);
 
   if (!sourceEl || !targetEl) {
     console.error('Source or target element not found');
     return;
   }
   const source = sourceEl.getBoundingClientRect();
-  const targetBox = targetEl.getBoundingClientRect();
-  console.log(targetEl.offsetLeft, targetEl.offsetTop);
-
-  const target = {
-    ...targetBox,
-    x: (targetEl as HTMLElement).offsetLeft,
-    y: (targetEl as HTMLElement).offsetTop,
-  };
-
+  const target = targetEl.getBoundingClientRect();
   // const offset = getOffset();
   const sideAxis = getSideAxis(placement);
   const alignmentAxis = getAlignmentAxis(placement);

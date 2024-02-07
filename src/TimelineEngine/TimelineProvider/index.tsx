@@ -1,6 +1,7 @@
 import { createContext, useCallback, useEffect, useRef, useState } from 'react';
 import { attachAnimationToElementIfPresent, createKeyframes } from '../Utils';
 import { IAnimation, ITimelineCallback, ITimelineContext, TimelineDefinition } from './types';
+import { moveElement } from './util';
 
 export const TimelineContext = createContext<ITimelineContext | null>(null);
 
@@ -85,28 +86,30 @@ export const TimelineProvider = ({
         return;
       }
       const currentTimeInMilliseconds = audioRef.current?.currentTime * 1000;
-      const animations = timelineDefinition[currentTrackNumber].events;
-      for (const animation of animations) {
-        const scheduledTime = animation.startTime;
+      const timelineEvents = timelineDefinition[currentTrackNumber].events;
+      for (const event of timelineEvents) {
+        const scheduledTime = event.startTime;
         if (
           scheduledTime >= currentTimeInMilliseconds &&
           scheduledTime <= currentTimeInMilliseconds + lookahead
         ) {
-          const timeUntilAnimation = scheduledTime - currentTimeInMilliseconds;
+          if (event.type === 'moveElementTo') {
+            // HERE IS WHERE WE HANDLE MOVE ELEMENT TO
+            moveElement(event.elementSelector, event.destinationSelector);
+            continue;
+          }
+          const timeUntilEvent = scheduledTime - currentTimeInMilliseconds;
           setTimeout(() => {
-            if (animation.type !== 'animation') {
-              return;
-            }
-            const element = document.getElementById(animation.domId.slice(1));
+            const element = document.getElementById(event.domId.slice(1));
             if (!element) {
               console.warn(
-                `No element found with id: ${animation.domId.slice(1)} --> skipping animation`,
+                `No element found with id: ${event.domId.slice(1)} --> skipping animation`,
               );
               return;
             }
 
             element.style.animationPlayState = 'running';
-          }, timeUntilAnimation);
+          }, timeUntilEvent);
         }
       }
     }
@@ -121,9 +124,12 @@ export const TimelineProvider = ({
   useEffect(() => {
     // Create keyframes for each animation
     for (const segment of timelineDefinition) {
-      for (const animation of segment.events) {
-        if (animation.type === 'animation') {
-          createKeyframes(animation.domId, animation.animations, animation.duration);
+      for (const timelineEvent of segment.events) {
+        if (timelineEvent.type === 'animation') {
+          createKeyframes(timelineEvent.domId, timelineEvent.animations, timelineEvent.duration);
+        }
+        if (timelineEvent.type === 'moveElementTo') {
+          // TODO: set this up
         }
       }
     }
@@ -150,19 +156,25 @@ export const TimelineProvider = ({
   }
 
   function onAudioPlay() {
-    const animations = timelineDefinition[currentTrackNumber].events;
+    const timelineEvents = timelineDefinition[currentTrackNumber].events;
     const currentTimeInMilliseconds = (audioRef.current?.currentTime || 0) * 1000;
     // Restart any animations we paused
-    for (const animation of animations) {
-      const animationEndTime = animation.startTime + animation.duration;
+    for (const event of timelineEvents) {
+      const eventEndTime = event.startTime + event.duration;
       if (
-        animation.startTime <= currentTimeInMilliseconds &&
-        animationEndTime > currentTimeInMilliseconds
+        event.startTime <= currentTimeInMilliseconds &&
+        eventEndTime > currentTimeInMilliseconds
       ) {
-        if (animation.type !== 'animation') {
+        if (event.type === 'moveElementTo') {
+          const element = document.getElementById(event.elementSelector.slice(1));  
+          if (element) {
+            element.getAnimations().forEach((animation) => {
+              animation.play();
+            });
+          }
           continue;
         }
-        const element = document.getElementById(animation.domId.slice(1));
+        const element = document.getElementById(event.domId.slice(1));
         if (element) {
           element.style.animationPlayState = 'running';
         }
@@ -171,12 +183,18 @@ export const TimelineProvider = ({
     }
   }
   function onAudioPause() {
-    const animations = timelineDefinition[currentTrackNumber].events;
-    for (const animation of animations) {
-      if (animation.type !== 'animation') {
+    const timelineEvents = timelineDefinition[currentTrackNumber].events;
+    for (const event of timelineEvents) {
+      if (event.type == 'moveElementTo') {
+        const element = document.getElementById(event.elementSelector.slice(1));
+        if (element) {
+          element.getAnimations().forEach((animation) => {
+            animation.pause();
+          });
+        }
         continue;
       }
-      const element = document.getElementById(animation.domId.slice(1));
+      const element = document.getElementById(event.domId.slice(1));
       if (element) {
         element.style.animationPlayState = 'paused';
       }

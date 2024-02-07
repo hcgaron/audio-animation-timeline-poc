@@ -1,10 +1,22 @@
 export interface IAnimation {
+  type: 'animation';
   domId: string;
   // If not provided, it will default to the entire length of the audio file
-  durationInMs: number;
+  duration: number;
   animations: Keyframe[];
-  startTimeInMs: number;
+  startTime: number;
 }
+
+export interface MoveElementTo {
+  type: 'moveElementTo';
+  elementSelector: string;
+  destinationSelector: string;
+  // If not provided, it will default to the entire length of the audio file
+  duration: number;
+  startTime: number;
+}
+
+export type TimelineEvent = IAnimation | MoveElementTo;
 
 export interface ITimelineCallback {
   timestamp: number; // In milliseconds
@@ -13,7 +25,7 @@ export interface ITimelineCallback {
 
 interface TimelineSegment {
   audioSrc: string;
-  animations: IAnimation[];
+  events: TimelineEvent[];
 }
 export type TimelineDefinition = TimelineSegment[];
 

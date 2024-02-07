@@ -85,15 +85,18 @@ export const TimelineProvider = ({
         return;
       }
       const currentTimeInMilliseconds = audioRef.current?.currentTime * 1000;
-      const animations = timelineDefinition[currentTrackNumber].animations;
+      const animations = timelineDefinition[currentTrackNumber].events;
       for (const animation of animations) {
-        const scheduledTime = animation.startTimeInMs;
+        const scheduledTime = animation.startTime;
         if (
           scheduledTime >= currentTimeInMilliseconds &&
           scheduledTime <= currentTimeInMilliseconds + lookahead
         ) {
           const timeUntilAnimation = scheduledTime - currentTimeInMilliseconds;
           setTimeout(() => {
+            if (animation.type !== 'animation') {
+              return;
+            }
             const element = document.getElementById(animation.domId.slice(1));
             if (!element) {
               console.warn(
@@ -118,8 +121,10 @@ export const TimelineProvider = ({
   useEffect(() => {
     // Create keyframes for each animation
     for (const segment of timelineDefinition) {
-      for (const animation of segment.animations) {
-        createKeyframes(animation.domId, animation.animations, animation.durationInMs);
+      for (const animation of segment.events) {
+        if (animation.type === 'animation') {
+          createKeyframes(animation.domId, animation.animations, animation.duration);
+        }
       }
     }
   }, [timelineDefinition]);
@@ -145,15 +150,18 @@ export const TimelineProvider = ({
   }
 
   function onAudioPlay() {
-    const animations = timelineDefinition[currentTrackNumber].animations;
+    const animations = timelineDefinition[currentTrackNumber].events;
     const currentTimeInMilliseconds = (audioRef.current?.currentTime || 0) * 1000;
     // Restart any animations we paused
     for (const animation of animations) {
-      const animationEndTime = animation.startTimeInMs + animation.durationInMs;
+      const animationEndTime = animation.startTime + animation.duration;
       if (
-        animation.startTimeInMs <= currentTimeInMilliseconds &&
+        animation.startTime <= currentTimeInMilliseconds &&
         animationEndTime > currentTimeInMilliseconds
       ) {
+        if (animation.type !== 'animation') {
+          continue;
+        }
         const element = document.getElementById(animation.domId.slice(1));
         if (element) {
           element.style.animationPlayState = 'running';
@@ -163,8 +171,11 @@ export const TimelineProvider = ({
     }
   }
   function onAudioPause() {
-    const animations = timelineDefinition[currentTrackNumber].animations;
+    const animations = timelineDefinition[currentTrackNumber].events;
     for (const animation of animations) {
+      if (animation.type !== 'animation') {
+        continue;
+      }
       const element = document.getElementById(animation.domId.slice(1));
       if (element) {
         element.style.animationPlayState = 'paused';
@@ -207,9 +218,14 @@ export const TimelineProvider = ({
   );
 
   function registerAnimatedElement(domId: string) {
-    const animationDuration = timelineDefinition[currentTrackNumber].animations.find(
-      (animation) => animation.domId === domId,
-    )?.durationInMs;
+    const animationEvents = timelineDefinition[currentTrackNumber].events.filter(
+      (animation) => animation.type === 'animation',
+    ) as IAnimation[];
+
+    const animationDuration = animationEvents.find((animation) => {
+      return animation.domId === domId;
+    })?.duration;
+
     attachAnimationToElementIfPresent(domId, domId.slice(1), animationDuration);
   }
 

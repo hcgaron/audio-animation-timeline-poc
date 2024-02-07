@@ -10,6 +10,51 @@ export function Home() {
   const [showDelayedElement, setShowDelayedElement] = useState(false);
   const audioSrc = 'https://cdn.freesound.org/previews/571/571367_2282212-lq.mp3';
 
+  function handleMoveA() {
+    const target1 = document.getElementById('button-a');
+    const dot = document.getElementById('dot');
+
+    if (!target1 || !dot) {
+      return;
+    }
+
+    const target1Rect = target1.getBoundingClientRect();
+
+    dot.animate(
+      [
+        {
+          transform: `translate(${target1Rect.left - dot.offsetLeft}px, ${target1Rect.top - dot.offsetTop}px)`,
+        },
+      ],
+      {
+        duration: 500, // Adjust duration as needed
+        fill: 'forwards', // Keeps the element in the final state of the animation
+      },
+    );
+  }
+
+  function handleMoveB() {
+    const target1 = document.getElementById('button-d');
+    const dot = document.getElementById('dot');
+    if (!target1 || !dot) {
+      return;
+    }
+
+    const target1Rect = target1.getBoundingClientRect();
+
+    dot.animate(
+      [
+        {
+          transform: `translate(${target1Rect.left - dot.offsetLeft}px, ${target1Rect.top - dot.offsetTop}px)`,
+        },
+      ],
+      {
+        duration: 500, // Adjust duration as needed
+        fill: 'forwards', // Keeps the element in the final state of the animation
+      },
+    );
+  }
+
   useEffect(() => {
     registerTimelineCallback(
       () => {
@@ -92,6 +137,8 @@ export function Home() {
         <button onClick={isPlaying ? pause : play}>
           {isPlaying ? 'PAUSE AUDIO' : 'PLAY AUDIO'}
         </button>
+        <button onClick={() => handleMoveA()}>Move A</button>
+        <button onClick={() => handleMoveB()}>Move D</button>
         {placements.map((placement) => (
           <button key={placement} onClick={() => moveElement('#dot', '#button-a', placement)}>
             Move {placement}
@@ -138,6 +185,7 @@ export function Home() {
             <div
               id="dot"
               style={{
+                position: 'absolute',
                 border: '4px solid tomato',
                 borderRadius: '50%',
                 width: '6px',

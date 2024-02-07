@@ -30,7 +30,7 @@ export type Placement = Side | AlignedPlacement | 'center';
 export function moveElement(
   sourceSelector: string,
   targetSelector: string,
-  anchorTo: Placement = 'top-start'
+  anchorTo: Placement = 'top-start',
 ) {
   const sourceEl = document.querySelector(sourceSelector) as HTMLElement;
   const targetEl = document.querySelector(targetSelector) as HTMLElement;
@@ -41,13 +41,17 @@ export function moveElement(
   }
 
   // reset
-  sourceEl.style.transform = '';
+  // sourceEl.style.transform = '';
 
-  const destination = computeCoordsFromPlacement(
-    sourceSelector,
-    targetSelector,
-    { placement: anchorTo }
-  );
+  // const sourceStyle = window.getComputedStyle(sourceEl);
+  // const transform = sourceStyle.transform;
+  // console.log(transform);
+
+  // debugger;
+
+  const destination = computeCoordsFromPlacement(sourceSelector, targetSelector, {
+    placement: anchorTo,
+  });
 
   console.log(destination);
   if (!destination) {
@@ -55,16 +59,10 @@ export function moveElement(
     return;
   }
 
-  sourceEl.animate(
-    [
-      { transform: 'translate(0, 0)' },
-      { transform: `translate(${destination.x}px, ${destination.y}px)` },
-    ],
-    {
-      duration: 1000,
-      fill: 'forwards',
-    }
-  );
+  sourceEl.animate([{ transform: `translate(${destination.x}px, ${destination.y}px)` }], {
+    duration: 1000,
+    fill: 'forwards',
+  });
 }
 
 export type Axis = 'x' | 'y';
@@ -76,6 +74,13 @@ export type Rect = Coords & Dimensions;
 export interface ElementRects {
   source: Rect;
   target: Rect;
+}
+
+function getOffset() {
+  // const rect = el.getBoundingClientRect();
+  const offsetX = window.scrollX || document.documentElement.scrollLeft;
+  const offsetY = window.scrollY || document.documentElement.scrollTop;
+  return { offsetX, offsetY };
 }
 
 export function getSide(placement: Placement): Side {
@@ -109,7 +114,7 @@ export function computeCoordsFromPlacement(
     placement,
     sideOffset = 0,
     alignOffset = 0,
-  }: { placement: Placement; sideOffset?: number; alignOffset?: number }
+  }: { placement: Placement; sideOffset?: number; alignOffset?: number },
 ): Coords | undefined {
   const sourceEl = document.querySelector(sourceSelector);
   const targetEl = document.querySelector(targetSelector);
@@ -120,6 +125,7 @@ export function computeCoordsFromPlacement(
   }
   const source = sourceEl.getBoundingClientRect();
   const target = targetEl.getBoundingClientRect();
+  const offset = getOffset();
   const sideAxis = getSideAxis(placement);
   const alignmentAxis = getAlignmentAxis(placement);
   const alignLength = getAxisLength(alignmentAxis);
@@ -167,20 +173,16 @@ export function computeCoordsFromPlacement(
   switch (alignment) {
     case 'start':
       if (side === 'right' || side === 'left') {
-        coords[alignmentAxis] -=
-          (commonAlign + alignOffset) * (isVertical ? -1 : 1);
+        coords[alignmentAxis] -= (commonAlign + alignOffset) * (isVertical ? -1 : 1);
       } else {
-        coords[alignmentAxis] +=
-          (commonAlign + alignOffset) * (isVertical ? -1 : 1);
+        coords[alignmentAxis] += (commonAlign + alignOffset) * (isVertical ? -1 : 1);
       }
       break;
     case 'end':
       if (side === 'right' || side === 'left') {
-        coords[alignmentAxis] +=
-          (commonAlign + alignOffset) * (isVertical ? -1 : 1);
+        coords[alignmentAxis] += (commonAlign + alignOffset) * (isVertical ? -1 : 1);
       } else {
-        coords[alignmentAxis] -=
-          (commonAlign + alignOffset) * (isVertical ? -1 : 1);
+        coords[alignmentAxis] -= (commonAlign + alignOffset) * (isVertical ? -1 : 1);
       }
       break;
     default:

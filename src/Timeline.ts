@@ -7,6 +7,13 @@ export const timeline: TimelineDefinition = [
 
     events: [
       {
+        elementSelector: '#dot',
+        destinationSelector: '#button-a',
+        type: 'moveElementTo',
+        duration: 1000,
+        startTime: 1000,
+      },
+      {
         type: 'animation',
         domId: '#a1',
         duration: 39000,
